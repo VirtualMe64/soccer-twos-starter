@@ -18,7 +18,7 @@ if __name__ == "__main__":
         name="PPO_SP",
         config={
             # system settings
-            "num_gpus": 1,
+            "num_gpus": 0,
             "num_workers": 8,
             "num_envs_per_worker": NUM_ENVS_PER_WORKER,
             "log_level": "INFO",
@@ -41,10 +41,11 @@ if __name__ == "__main__":
             "train_batch_size": 12000,
         },
         stop={
-            "timesteps_total": 20000000,  # 15M
+            # "timesteps_total": 20000000,  # 15M
             # "time_total_s": 14400, # 4h
+            "time_total_s": 1200
         },
-        checkpoint_freq=100,
+        checkpoint_freq=25,
         checkpoint_at_end=True,
         local_dir="./ray_results",
         # restore="./ray_results/PPO_selfplay_1/PPO_Soccer_ID/checkpoint_00X/checkpoint-X",
