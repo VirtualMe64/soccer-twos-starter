@@ -70,6 +70,8 @@ class SammyAgent(AgentInterface):
         self.policy = agent.get_policy(POLICY_NAME)
         print(f"Found policy with type: {type(self.policy)}")
 
+        self.name = "Sammy"
+
     def act(self, observation: Dict[int, np.ndarray]) -> Dict[int, np.ndarray]:
         """The act method is called when the agent is asked to act.
         Args:
