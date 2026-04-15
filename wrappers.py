@@ -1,16 +1,80 @@
 import gym
 from ray.rllib import MultiAgentEnv
+import soccer_twos
+
+import math
 
 from utils import RLLibWrapper
 
-import soccer_twos
+class TeamBallWrapper(gym.core.Wrapper, MultiAgentEnv):
+    def calculate_ball_position_reward(self, info):
+        MAX_REWARD = 10
+        MIN_REWARD = -10
+        MAX_DISTANCE = 30
+        HALF_DISTANCE = MAX_DISTANCE / 2
 
-class InjectionWrapper(gym.core.Wrapper, MultiAgentEnv):
+        ball_loc = info[0][0]['ball_info']['position']
+        # team 0 is on the left, wants ball to be close to (15, 0)
+        # team 1 is on the right, wants ball to be close to (-15, 0)
+        # distances are capped at 30, 0 to 30 lerps to MAX_REWARD to MIN_REWARD
+
+        reward = {}
+        dist_team_0 = math.sqrt((ball_loc[0] - HALF_DISTANCE) ** 2 + ball_loc[1] ** 2)
+        dist_team_1 = math.sqrt((ball_loc[0] + HALF_DISTANCE) ** 2 + ball_loc[1] ** 2)
+        base_reward_team_0 = MAX_REWARD - (dist_team_0 / MAX_DISTANCE) * (MAX_REWARD - MIN_REWARD)
+        base_reward_team_1 = MAX_REWARD - (dist_team_1 / MAX_DISTANCE) * (MAX_REWARD - MIN_REWARD)
+        reward[0] = max(MIN_REWARD, min(MAX_REWARD, base_reward_team_0))
+        reward[1] = max(MIN_REWARD, min(MAX_REWARD, base_reward_team_1))
+
+        return reward
+    
+    def calculate_ball_proximity_reward(self, info):
+        MAX_REWARD = 0.01
+        MIN_REWARD = 0
+        MAX_DISTANCE = 20
+
+        ball_loc = info[0][0]['ball_info']['position']
+        reward = {}
+        for team_id in [0, 1]:
+            for player_id in [0, 1]:
+                player_loc = info[team_id][player_id]['player_info']['position']
+                dist = math.sqrt((ball_loc[0] - player_loc[0]) ** 2 + (ball_loc[1] - player_loc[1]) ** 2)
+                base_reward = MAX_REWARD - (dist / MAX_DISTANCE) * (MAX_REWARD - MIN_REWARD)
+                reward[team_id] = reward.get(team_id, 0) + max(MIN_REWARD, min(MAX_REWARD, base_reward))
+
+        return reward
+
 
     def step(self, action):
-        result = super().step(action)
-        print("HI")
-        return result
+        observation, reward, done, info = super().step(action)
+        
+        ball_pos_rewards = self.calculate_ball_position_reward(info)
+        ball_proximity_rewards = self.calculate_ball_proximity_reward(info)
+        for team_id in reward:
+            reward[team_id] += ball_pos_rewards[team_id]
+            reward[team_id] += ball_proximity_rewards[team_id]
+
+        return observation, reward, done, info
+    
+class MoveRightWrapper(gym.core.Wrapper, MultiAgentEnv):
+    def calculate_x_pos_reward(self, info):
+        reward = {}
+        for player_id in info:
+            player_loc = info[player_id]['player_info']['position']
+            player_x = player_loc[0]
+            reward[player_id] = reward.get(player_id, 0) + player_x
+
+        return reward
+
+
+    def step(self, action):
+        observation, reward, done, info = super().step(action)
+        
+        x_pos_rewards = self.calculate_x_pos_reward(info)
+        for player_id in reward:
+            reward[player_id] += x_pos_rewards[player_id]
+
+        return observation, reward, done, info
 
 def create_rllib_env_with_wrapper(wrapper_cls=RLLibWrapper):
     return lambda config : _create_rllib_env_with_wrapper(config, wrapper_cls)

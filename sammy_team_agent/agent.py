@@ -20,12 +20,12 @@ from utils import create_rllib_env
 ALGORITHM = "PPO"
 CHECKPOINT_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "PPO_Soccer_805a5_00000_0_2026-02-18_23-28-55\checkpoint_000042\checkpoint-42",
+    "PPO_Soccer_f41d3_00000_0_2026-04-14_19-37-52\checkpoint_000032\checkpoint-32",
 )
-POLICY_NAME = "default_policy"  # this may be useful when training with selfplay
+POLICY_NAME = "default"  # this may be useful when training with selfplay
 
 
-class SammyAgent(AgentInterface):
+class SammyTeamAgent(AgentInterface):
     """
     RayAgent is an agent that uses ray to train a model.
     """
@@ -62,8 +62,10 @@ class SammyAgent(AgentInterface):
         config["num_workers"] = 0
         config["num_gpus"] = 0
 
-        tune.registry.register_env("Soccer", create_rllib_env)
-        config["env"] = "Soccer"
+        # create a dummy env since it's required but we only care about the policy
+        tune.registry.register_env("DummyEnv", lambda *_: BaseEnv())
+        config["env"] = "DummyEnv"
+
 
         # create the Trainer from config
         cls = get_trainable_cls(ALGORITHM)
@@ -72,9 +74,8 @@ class SammyAgent(AgentInterface):
         agent.restore(CHECKPOINT_PATH)
         # get policy for evaluation
         self.policy = agent.get_policy(POLICY_NAME)
-        print(f"Found policy with type: {type(self.policy)}")
 
-        self.name = "Sammy"
+        self.name = "Sammy Team Agent"
 
     def act(self, observation: Dict[int, np.ndarray]) -> Dict[int, np.ndarray]:
         """The act method is called when the agent is asked to act.
@@ -86,15 +87,11 @@ class SammyAgent(AgentInterface):
             action: a dictionary where keys are team member ids and values
                 are their corresponding actions, as np.arrays.
         """
+        team_observations = np.concatenate(list(observation.values()), axis=0)
+        team_actions, *_ = self.policy.compute_single_action(
+            team_observations
+        )
         actions = {}
         for player_id in observation:
-            # compute_single_action returns a tuple of (action, action_info, ...)
-            # since we only need the action, we discard the other elements
-            flat_action, *_ = self.policy.compute_single_action(
-                observation[player_id]
-            )
-            flat_action = int(np.asarray(flat_action).item())
-            actions[player_id] = np.array(
-                np.unravel_index(flat_action, (3, 3, 3)), dtype=np.int32
-            )
+            actions[player_id] = team_actions[int(player_id) * 3 : (int(player_id) + 1) * 3]
         return actions

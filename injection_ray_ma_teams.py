@@ -2,7 +2,7 @@ import ray
 from ray import tune
 from soccer_twos import EnvType
 
-from wrappers import InjectionWrapper, create_rllib_env_with_wrapper
+from wrappers import *
 
 NUM_ENVS_PER_WORKER = 3
 
@@ -10,7 +10,7 @@ NUM_ENVS_PER_WORKER = 3
 if __name__ == "__main__":
     ray.init()
 
-    create_rllib_env = create_rllib_env_with_wrapper(InjectionWrapper)
+    create_rllib_env = create_rllib_env_with_wrapper(TeamBallWrapper)
     tune.registry.register_env("Soccer", create_rllib_env)
     temp_env = create_rllib_env({"variation": EnvType.multiagent_team})
     obs_space = temp_env.observation_space
@@ -40,10 +40,16 @@ if __name__ == "__main__":
                 "num_envs_per_worker": NUM_ENVS_PER_WORKER,
                 "variation": EnvType.multiagent_team,
             },
+            "model": {
+                "vf_share_layers": True,
+                "fcnet_hiddens": [128],
+            },
         },
         stop={
-            "timesteps_total": 15000000,  # 15M
+            # "timesteps_total": 15000000,  # 15M
+            # "timesteps_total": 150000 # 150k
             # "time_total_s": 14400, # 4h
+            "time_total_s": 1200, # 20m
         },
         checkpoint_freq=100,
         checkpoint_at_end=True,
