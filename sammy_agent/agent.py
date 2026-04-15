@@ -20,7 +20,7 @@ from utils import create_rllib_env
 ALGORITHM = "DQN"
 CHECKPOINT_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "DQN_Soccer_33edd_00000_0_2026-04-14_20-51-14\checkpoint_000185\checkpoint-185",
+    "DQN_Soccer_6a58b_00000_0_2026-04-14_21-07-04\checkpoint_001842\checkpoint-1842",
 )
 POLICY_NAME = "default_policy"  # this may be useful when training with selfplay
 

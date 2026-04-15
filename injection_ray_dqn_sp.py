@@ -10,7 +10,7 @@ NUM_ENVS_PER_WORKER = 3
 if __name__ == "__main__":
     ray.init(include_dashboard=False)
 
-    tune.registry.register_env("Soccer", create_rllib_env_with_wrapper(MoveRightWrapper))
+    tune.registry.register_env("Soccer", create_rllib_env_with_wrapper(IndividualBallWrapper))
 
     analysis = tune.run(
         "DQN",
@@ -30,16 +30,18 @@ if __name__ == "__main__":
                 "multiagent": False,
                 "flatten_branched": True,
                 "single_player": True,
+                "opponent_policy": lambda *_: 0,
             },
             "model": {
-                "fcnet_hiddens": [128],
+                "fcnet_hiddens": [512, 256, 128],
             },
         },
         stop={
             # "timesteps_total": 20000000,  # 20M
             # "timesteps_total": 150000,  # 150k
             # "time_total_s": 14400, # 4h
-            "time_total_s": 300, # 10m
+            "time_total_s": 3600, # 1h
+            # "time_total_s": 300, # 10m
         },
         checkpoint_freq=100,
         checkpoint_at_end=True,

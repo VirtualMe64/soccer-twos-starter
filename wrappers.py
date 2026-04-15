@@ -8,8 +8,8 @@ from utils import RLLibWrapper
 
 class TeamBallWrapper(gym.core.Wrapper, MultiAgentEnv):
     def calculate_ball_position_reward(self, info):
-        MAX_REWARD = 10
-        MIN_REWARD = -10
+        MAX_REWARD = 0.0001
+        MIN_REWARD = -0.0001
         MAX_DISTANCE = 30
         HALF_DISTANCE = MAX_DISTANCE / 2
 
@@ -55,7 +55,46 @@ class TeamBallWrapper(gym.core.Wrapper, MultiAgentEnv):
             reward[team_id] += ball_proximity_rewards[team_id]
 
         return observation, reward, done, info
+
+class IndividualBallWrapper(gym.core.Wrapper):
+    def calculate_ball_position_reward(self, info):
+        MAX_REWARD = 0.0001
+        MIN_REWARD = -0.0001
+        MAX_DISTANCE = 30
+        Y_FACTOR = 0.2
+
+        ball_loc = info['ball_info']['position']
+        dist = math.sqrt(((ball_loc[0] - 15) ** 2) + (Y_FACTOR * (ball_loc[1] ** 2)))
+        base_reward = MAX_REWARD - (dist / MAX_DISTANCE) * (MAX_REWARD - MIN_REWARD)
+        reward = max(MIN_REWARD, min(MAX_REWARD, base_reward))
+
+        return reward
     
+    def calculate_ball_proximity_reward(self, info):
+        MAX_REWARD = 0.0005
+        MIN_REWARD = 0
+        MAX_DISTANCE = 20
+
+        ball_loc = info['ball_info']['position']
+        player_loc = info['player_info']['position']
+        dist = math.sqrt((ball_loc[0] - player_loc[0]) ** 2 + (ball_loc[1] - player_loc[1]) ** 2)
+        base_reward = MAX_REWARD - (dist / MAX_DISTANCE) * (MAX_REWARD - MIN_REWARD)
+        reward = max(MIN_REWARD, min(MAX_REWARD, base_reward))
+
+        return reward
+
+    def calculate_existence_reward(self):
+        return -0.00005
+
+    def step(self, action):
+        observation, reward, done, info = super().step(action)
+        
+        reward += self.calculate_ball_position_reward(info)
+        reward += self.calculate_existence_reward()
+        reward += self.calculate_ball_proximity_reward(info)
+
+        return observation, reward, done, info
+
 class MoveRightWrapper(gym.core.Wrapper):
     def calculate_x_pos_reward(self, info):
         player_loc = info['player_info']['position']
