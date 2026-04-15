@@ -2,20 +2,22 @@ import ray
 from ray import tune
 from soccer_twos import EnvType
 
-from utils import create_rllib_env
-
+from wrappers import *
 
 NUM_ENVS_PER_WORKER = 3
-
 
 if __name__ == "__main__":
     ray.init()
 
+    create_rllib_env = create_rllib_env_with_wrapper(IndividualBallWrapper)
     tune.registry.register_env("Soccer", create_rllib_env)
     temp_env = create_rllib_env({"variation": EnvType.multiagent_player})
     obs_space = temp_env.observation_space
     act_space = temp_env.action_space
     temp_env.close()
+
+    def policy_mapping_fn(agent_id, **kwargs):
+        return f"default" if int(agent_id) == 0 else f"agent_{agent_id}"
 
     analysis = tune.run(
         "PPO",
@@ -23,7 +25,7 @@ if __name__ == "__main__":
         config={
             # system settings
             "num_gpus": 0,
-            "num_workers": 6,
+            "num_workers": 8,
             "num_envs_per_worker": NUM_ENVS_PER_WORKER,
             "log_level": "INFO",
             "framework": "torch",
@@ -31,15 +33,27 @@ if __name__ == "__main__":
             "multiagent": {
                 "policies": {
                     "default": (None, obs_space, act_space, {}),
+                    "agent_1": (None, obs_space, act_space, {}),
+                    "agent_2": (None, obs_space, act_space, {}),
+                    "agent_3": (None, obs_space, act_space, {}),
                 },
-                "policy_mapping_fn": tune.function(lambda _: "default"),
-                "policies_to_train": ["default"],
+                "policy_mapping_fn": tune.function(policy_mapping_fn),
+                "policies_to_train": ["default", "agent_1", "agent_2", "agent_3"],
             },
             "env": "Soccer",
             "env_config": {
                 "num_envs_per_worker": NUM_ENVS_PER_WORKER,
                 "variation": EnvType.multiagent_player,
             },
+            "model": {
+                "fcnet_activation": "relu",
+                "fcnet_hiddens": [
+                256,
+                256
+                ],
+                "vf_share_layers": True
+            },
+            "rollout_fragment_length": 5000  
         },
         stop={
             # "timesteps_total": 15000000,  # 15M
