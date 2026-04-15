@@ -1,5 +1,5 @@
 import gym
-from ray.rllib import MultiAgentEnv
+from ray.rllib import MultiAgentEnv, BaseEnv
 import soccer_twos
 
 import math
@@ -56,30 +56,24 @@ class TeamBallWrapper(gym.core.Wrapper, MultiAgentEnv):
 
         return observation, reward, done, info
     
-class MoveRightWrapper(gym.core.Wrapper, MultiAgentEnv):
+class MoveRightWrapper(gym.core.Wrapper):
     def calculate_x_pos_reward(self, info):
-        reward = {}
-        for player_id in info:
-            player_loc = info[player_id]['player_info']['position']
-            player_x = player_loc[0]
-            reward[player_id] = reward.get(player_id, 0) + player_x
+        player_loc = info['player_info']['position']
+        player_x = player_loc[0]
 
-        return reward
-
+        return player_x
 
     def step(self, action):
         observation, reward, done, info = super().step(action)
-        
-        x_pos_rewards = self.calculate_x_pos_reward(info)
-        for player_id in reward:
-            reward[player_id] += x_pos_rewards[player_id]
+
+        reward += self.calculate_x_pos_reward(info)
 
         return observation, reward, done, info
 
 def create_rllib_env_with_wrapper(wrapper_cls=RLLibWrapper):
     return lambda config : _create_rllib_env_with_wrapper(config, wrapper_cls)
 
-def _create_rllib_env_with_wrapper(env_config: dict = {}, wrapper_cls=RLLibWrapper):
+def _create_rllib_env_with_wrapper(env_config: dict = {}, wrapper_cls = None):
     """
     Creates a RLLib environment and prepares it to be instantiated by Ray workers.
     Args:
@@ -97,5 +91,5 @@ def _create_rllib_env_with_wrapper(env_config: dict = {}, wrapper_cls=RLLibWrapp
     # env = TransitionRecorderWrapper(env)
     if "multiagent" in env_config and not env_config["multiagent"]:
         # is multiagent by default, is only disabled if explicitly set to False
-        return env
-    return wrapper_cls(env)
+        return env if wrapper_cls is None else wrapper_cls(env)
+    return env if wrapper_cls is None else wrapper_cls(env)

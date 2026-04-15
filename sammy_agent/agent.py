@@ -17,10 +17,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils import create_rllib_env
 
-ALGORITHM = "PPO"
+ALGORITHM = "DQN"
 CHECKPOINT_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "PPO_Soccer_805a5_00000_0_2026-02-18_23-28-55\checkpoint_000042\checkpoint-42",
+    "DQN_Soccer_33edd_00000_0_2026-04-14_20-51-14\checkpoint_000185\checkpoint-185",
 )
 POLICY_NAME = "default_policy"  # this may be useful when training with selfplay
 

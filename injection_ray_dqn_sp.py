@@ -2,16 +2,15 @@ import ray
 from ray import tune
 from soccer_twos import EnvType
 
-from utils import create_rllib_env
-
+from wrappers import *
 
 NUM_ENVS_PER_WORKER = 3
 
 
 if __name__ == "__main__":
-    ray.init()
+    ray.init(include_dashboard=False)
 
-    tune.registry.register_env("Soccer", create_rllib_env)
+    tune.registry.register_env("Soccer", create_rllib_env_with_wrapper(MoveRightWrapper))
 
     analysis = tune.run(
         "DQN",
@@ -33,12 +32,14 @@ if __name__ == "__main__":
                 "single_player": True,
             },
             "model": {
-                "fcnet_hiddens": [512, 256],
+                "fcnet_hiddens": [128],
             },
         },
         stop={
             # "timesteps_total": 20000000,  # 20M
-            "time_total_s": 3600, # 1h
+            # "timesteps_total": 150000,  # 150k
+            # "time_total_s": 14400, # 4h
+            "time_total_s": 300, # 10m
         },
         checkpoint_freq=100,
         checkpoint_at_end=True,
