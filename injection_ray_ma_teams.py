@@ -54,7 +54,7 @@ if __name__ == "__main__":
         checkpoint_freq=100,
         checkpoint_at_end=True,
         local_dir="./ray_results",
-        # restore="./ray_results/PPO_teams_1/PPO_Soccer_ID/checkpoint_00X/checkpoint-X",
+        # restore="./ray_results/PPO_selfplay_1/PPO_Soccer_666ea_00000_0_2026-04-15_19-25-33/checkpoint_000038/checkpoint-38",
     )
 
     # Gets best trial based on max accuracy across all training iterations.

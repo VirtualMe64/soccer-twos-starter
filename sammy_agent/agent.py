@@ -17,12 +17,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils import create_rllib_env
 
-ALGORITHM = "DQN"
+ALGORITHM = "PPO"
 CHECKPOINT_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "DQN_Soccer_6a58b_00000_0_2026-04-14_21-07-04\checkpoint_001842\checkpoint-1842",
+    "PPO_Soccer_53fd9_00000_0_2026-04-16_00-11-22\checkpoint_000180\checkpoint-180",
 )
-POLICY_NAME = "default_policy"  # this may be useful when training with selfplay
+POLICY_NAME = "default"  # this may be useful when training with selfplay
 
 
 class SammyAgent(AgentInterface):
@@ -90,11 +90,7 @@ class SammyAgent(AgentInterface):
         for player_id in observation:
             # compute_single_action returns a tuple of (action, action_info, ...)
             # since we only need the action, we discard the other elements
-            flat_action, *_ = self.policy.compute_single_action(
+            actions[player_id], *_ = self.policy.compute_single_action(
                 observation[player_id]
-            )
-            flat_action = int(np.asarray(flat_action).item())
-            actions[player_id] = np.array(
-                np.unravel_index(flat_action, (3, 3, 3)), dtype=np.int32
             )
         return actions

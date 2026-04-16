@@ -58,12 +58,12 @@ if __name__ == "__main__":
         stop={
             # "timesteps_total": 15000000,  # 15M
             # "time_total_s": 14400, # 4h
-            "time_total_s": 3600, # 1h
+            "time_total_s": 3600 * 10, # 1h
         },
-        checkpoint_freq=100,
+        checkpoint_freq=30,
         checkpoint_at_end=True,
         local_dir="./ray_results",
-        # restore="./ray_results/PPO_selfplay_1/PPO_Soccer_ID/checkpoint_00X/checkpoint-X",
+        restore="./ray_results/PPO_selfplay_1/hour2/checkpoint_000062/checkpoint-62",
     )
 
     # Gets best trial based on max accuracy across all training iterations.
