@@ -20,9 +20,9 @@ from utils import create_rllib_env
 ALGORITHM = "PPO"
 CHECKPOINT_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "PPO_Soccer_53fd9_00000_0_2026-04-16_00-11-22\checkpoint_000300\checkpoint-300",
+    "PPO_Soccer_53fd9_00000_0_2026-04-16_00-11-22\checkpoint_000750\checkpoint-750",
 )
-POLICY_NAME = "default"  # this may be useful when training with selfplay
+POLICY_NAMES = ["default", "agent_1", "agent_2", "agent_3"]  # this may be useful when training with selfplay
 
 
 class SammyAgent(AgentInterface):
@@ -66,13 +66,16 @@ class SammyAgent(AgentInterface):
         config["env"] = "Soccer"
 
         # create the Trainer from config
-        cls = get_trainable_cls(ALGORITHM)
-        agent = cls(env=config["env"], config=config)
-        # load state from checkpoint
-        agent.restore(CHECKPOINT_PATH)
-        # get policy for evaluation
-        self.policy = agent.get_policy(POLICY_NAME)
-        print(f"Found policy with type: {type(self.policy)}")
+        self.policies = []
+        for policy_name in POLICY_NAMES:
+            cls = get_trainable_cls(ALGORITHM)
+            agent = cls(env=config["env"], config=config)
+            # load state from checkpoint
+            agent.restore(CHECKPOINT_PATH)
+            # get policy for evaluation
+            policy = agent.get_policy(policy_name)
+            print(f"Found policy with type: {type(policy)}")
+            self.policies.append(policy)
 
         self.name = "Sammy"
 
@@ -87,10 +90,26 @@ class SammyAgent(AgentInterface):
                 are their corresponding actions, as np.arrays.
         """
         actions = {}
-        for player_id in observation:
+        for i, player_id in enumerate(observation):
             # compute_single_action returns a tuple of (action, action_info, ...)
             # since we only need the action, we discard the other elements
-            actions[player_id], *_ = self.policy.compute_single_action(
-                observation[player_id]
-            )
+            possible_actions = []
+            for policy in self.policies:
+                action, *_ = policy.compute_single_action(observation[player_id])
+                possible_actions.append(action)
+            # for each of the 3 entries, we take the majority vote among the policies
+            # if a tie, choose randomly among the tied actions
+            final_action = []
+            for j in range(3):
+                counts = {}
+                for action in possible_actions:
+                    a = action[j]
+                    if a not in counts:
+                        counts[a] = 0
+                    counts[a] += 1
+                max_count = max(counts.values())
+                candidates = [a for a, count in counts.items() if count == max_count]
+                final_action.append(np.random.choice(candidates))
+            actions[player_id] = np.array(final_action)
+            
         return actions
