@@ -1,12 +1,3 @@
-# Approach
-PPO self play training 4 separate models using injected rewards to try and help with sparse rewards of goals. Model itself is based on the baseline.
-
-# Observations
-Training 4 models really slows down speed.
-
-# Training Code
-injected_ray_ma_players.py
-```python
 import os
 import ray
 from ray import tune
@@ -30,11 +21,11 @@ if __name__ == "__main__":
     temp_env.close()
 
     def policy_mapping_fn(agent_id, **kwargs):
-        return f"default" if int(agent_id) == 0 else f"agent_{agent_id}"
+        return f"default"
 
     analysis = tune.run(
         "PPO",
-        name="PPO_selfplay_1",
+        name="PPO_injected_ray_ma_sp",
         config={
             # system settings
             "num_gpus": 0,
@@ -45,13 +36,10 @@ if __name__ == "__main__":
             # RL setup
             "multiagent": {
                 "policies": {
-                    "default": (None, obs_space, act_space, {}),
-                    "agent_1": (None, obs_space, act_space, {}),
-                    "agent_2": (None, obs_space, act_space, {}),
-                    "agent_3": (None, obs_space, act_space, {}),
+                    "default": (None, obs_space, act_space, {})
                 },
                 "policy_mapping_fn": tune.function(policy_mapping_fn),
-                "policies_to_train": ["default", "agent_1", "agent_2", "agent_3"],
+                "policies_to_train": ["default"],
             },
             "env": "Soccer",
             "env_config": {
@@ -62,8 +50,9 @@ if __name__ == "__main__":
             "model": {
                 "fcnet_activation": "relu",
                 "fcnet_hiddens": [
-                256,
-                256
+                    1024,
+                    512,
+                    256
                 ],
                 "vf_share_layers": True
             },
@@ -74,10 +63,10 @@ if __name__ == "__main__":
             # "time_total_s": 14400, # 4h
             "time_total_s": 3600 * 12, # 1h
         },
-        checkpoint_freq=30,
+        checkpoint_freq=100,
         checkpoint_at_end=True,
         local_dir="./ray_results",
-        restore="./ray_results/PPO_selfplay_1/PPO_Soccer_53fd9_00000_0_2026-04-16_00-11-22/checkpoint_000180/checkpoint-180",
+        # restore="./ray_results/PPO_selfplay_1/PPO_Soccer_53fd9_00000_0_2026-04-16_00-11-22/checkpoint_000180/checkpoint-180",
     )
 
     # Gets best trial based on max accuracy across all training iterations.
@@ -89,4 +78,3 @@ if __name__ == "__main__":
     )
     print(best_checkpoint)
     print("Done training")
-```
