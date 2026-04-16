@@ -62,7 +62,7 @@ class SammyAgent(AgentInterface):
         config["num_workers"] = 0
         config["num_gpus"] = 0
 
-        tune.registry.register_env("Soccer", create_rllib_env)
+        tune.registry.register_env("Soccer", lambda *_: BaseEnv())
         config["env"] = "Soccer"
 
         # create the Trainer from config
