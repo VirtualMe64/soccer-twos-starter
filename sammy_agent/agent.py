@@ -20,10 +20,9 @@ from utils import create_rllib_env
 ALGORITHM = "PPO"
 CHECKPOINT_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "PPO_Soccer_53fd9_00000_0_2026-04-16_00-11-22\checkpoint_000750\checkpoint-750",
+    "PPO_Soccer_53fd9_00000_0_2026-04-16_00-11-22\checkpoint_001080\checkpoint-1080",
 )
 POLICY_NAMES = ["default", "agent_1", "agent_2", "agent_3"]  # this may be useful when training with selfplay
-
 
 class SammyAgent(AgentInterface):
     """
