@@ -58,8 +58,8 @@ class TeamBallWrapper(gym.core.Wrapper, MultiAgentEnv):
 
 class IndividualBallWrapper(gym.core.Wrapper, MultiAgentEnv):
     def calculate_ball_position_reward(self, info, goal_x):
-        MAX_REWARD = 0.0001
-        MIN_REWARD = -0.0001
+        MAX_REWARD = 0.0005
+        MIN_REWARD = -0.0005
         MAX_DISTANCE = 30
         Y_FACTOR = 0.2
 
@@ -71,8 +71,8 @@ class IndividualBallWrapper(gym.core.Wrapper, MultiAgentEnv):
         return reward
     
     def calculate_ball_proximity_reward(self, info):
-        MAX_REWARD = 0.0005
-        MIN_REWARD = 0
+        MAX_REWARD = 0.00025
+        MIN_REWARD = -0.00025
         MAX_DISTANCE = 20
 
         ball_loc = info['ball_info']['position']
