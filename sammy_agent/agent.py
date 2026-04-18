@@ -20,11 +20,13 @@ from utils import create_rllib_env
 ALGORITHM = "PPO"
 CHECKPOINT_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "../experiments/injected_ray_ma_players/hours13-24/"
-    "checkpoint_001426/checkpoint-1426",
+    "temp/checkpoint_000630/checkpoint-630",
 )
 print(CHECKPOINT_PATH)
-POLICY_NAMES = ["default", "agent_1", "agent_2", "agent_3"]  # this may be useful when training with selfplay
+POLICY_NAMES = [
+    ["default"],
+    ["default"],
+]  # this may be useful when training with selfplay
 
 class SammyAgent(AgentInterface):
     """
@@ -67,8 +69,12 @@ class SammyAgent(AgentInterface):
         config["env"] = "Soccer"
 
         # create the Trainer from config
-        self.policies = []
-        for policy_name in POLICY_NAMES:
+        self.policies = {}
+        all_policy_names = set()
+        for policy_list in POLICY_NAMES:
+            for policy_name in policy_list:
+                all_policy_names.add(policy_name)
+        for policy_name in all_policy_names:
             cls = get_trainable_cls(ALGORITHM)
             agent = cls(env=config["env"], config=config)
             # load state from checkpoint
@@ -76,7 +82,7 @@ class SammyAgent(AgentInterface):
             # get policy for evaluation
             policy = agent.get_policy(policy_name)
             print(f"Found policy with type: {type(policy)}")
-            self.policies.append(policy)
+            self.policies[policy_name] = policy
 
         self.name = "Sammy"
 
@@ -95,7 +101,8 @@ class SammyAgent(AgentInterface):
             # compute_single_action returns a tuple of (action, action_info, ...)
             # since we only need the action, we discard the other elements
             possible_actions = []
-            for policy in self.policies:
+            for policy_name in POLICY_NAMES[i]:
+                policy = self.policies[policy_name]
                 action, *_ = policy.compute_single_action(observation[player_id])
                 possible_actions.append(action)
             # for each of the 3 entries, we take the majority vote among the policies
