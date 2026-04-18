@@ -12,4 +12,4 @@ cd $SLURM_SUBMIT_DIR                            # Change to working directory
 
 module load anaconda3                           # Load module dependencies
 conda activate soccertwos
-srun python baseline_ray_ma_players.py
+srun python injected_ray_ma_players3.py

@@ -90,3 +90,46 @@ if __name__ == "__main__":
     print(best_checkpoint)
     print("Done training")
 ```
+
+```python
+class IndividualBallWrapper(gym.core.Wrapper, MultiAgentEnv):
+    def calculate_ball_position_reward(self, info, goal_x):
+        MAX_REWARD = 0.0001
+        MIN_REWARD = -0.0001
+        MAX_DISTANCE = 30
+        Y_FACTOR = 0.2
+
+        ball_loc = info['ball_info']['position']
+        dist = math.sqrt(((ball_loc[0] - goal_x) ** 2) + (Y_FACTOR * (ball_loc[1] ** 2)))
+        base_reward = MAX_REWARD - (dist / MAX_DISTANCE) * (MAX_REWARD - MIN_REWARD)
+        reward = max(MIN_REWARD, min(MAX_REWARD, base_reward))
+
+        return reward
+    
+    def calculate_ball_proximity_reward(self, info):
+        MAX_REWARD = 0.0005
+        MIN_REWARD = 0
+        MAX_DISTANCE = 20
+
+        ball_loc = info['ball_info']['position']
+        player_loc = info['player_info']['position']
+        dist = math.sqrt((ball_loc[0] - player_loc[0]) ** 2 + (ball_loc[1] - player_loc[1]) ** 2)
+        base_reward = MAX_REWARD - (dist / MAX_DISTANCE) * (MAX_REWARD - MIN_REWARD)
+        reward = max(MIN_REWARD, min(MAX_REWARD, base_reward))
+
+        return reward
+
+    def calculate_existence_reward(self):
+        return -0.00005
+
+    def step(self, action):
+        observation, reward, done, info = super().step(action)
+
+        for player_id in reward:
+            goal_x = 15 if int(player_id) <= 1 else -15
+            reward[player_id] += self.calculate_ball_position_reward(info[player_id], goal_x)
+            reward[player_id] += self.calculate_ball_proximity_reward(info[player_id])
+            reward[player_id] += self.calculate_existence_reward()
+
+        return observation, reward, done, info
+```
