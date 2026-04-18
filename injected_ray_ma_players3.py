@@ -3,9 +3,9 @@ import ray
 from ray import tune
 from soccer_twos import EnvType
 
-from utils import create_rllib_env
+from wrappers import *
 
-NUM_ENVS_PER_WORKER = 3
+NUM_ENVS_PER_WORKER = 6
 BASE_PORT = 8500
 
 
@@ -13,7 +13,7 @@ if __name__ == "__main__":
     os.environ["RAY_USAGE_STATS_ENABLED"] = "0"
     ray.init(include_dashboard=False)
 
-    # create_rllib_env = create_rllib_env_with_wrapper(IndividualBallWrapper)
+    create_rllib_env = create_rllib_env_with_wrapper(IndividualBallWrapper)
     tune.registry.register_env("Soccer", create_rllib_env)
     temp_env = create_rllib_env({"variation": EnvType.multiagent_player, "base_port": BASE_PORT})
     obs_space = temp_env.observation_space
@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     analysis = tune.run(
         "PPO",
-        name="baseline_ray_ma_players",
+        name="PPO_selfplay_3",
         config={
             # system settings
             "num_gpus": 0,
@@ -53,8 +53,7 @@ if __name__ == "__main__":
             "model": {
                 "fcnet_activation": "relu",
                 "fcnet_hiddens": [
-                256,
-                256
+                128
                 ],
                 "vf_share_layers": True
             },
@@ -63,12 +62,12 @@ if __name__ == "__main__":
         stop={
             # "timesteps_total": 15000000,  # 15M
             # "time_total_s": 14400, # 4h
-            "time_total_s": 3600 * 24, # 12h
+            "time_total_s": 3600 * 12, # 24h
         },
         checkpoint_freq=30,
         checkpoint_at_end=True,
         local_dir="./ray_results",
-        restore="./ray_results/baseline_ray_ma_players/PPO_Soccer_68718_00000_0_2026-04-16_23-20-39/checkpoint_000856/checkpoint-856",
+        # restore="./ray_results/PPO_selfplay_1/PPO_Soccer_d2636_00000_0_2026-04-16_11-06-19/checkpoint_000637/checkpoint-637",
     )
 
     # Gets best trial based on max accuracy across all training iterations.
