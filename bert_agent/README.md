@@ -1,6 +1,6 @@
 # CEIA Baseline Agent
 
-**Agent name:** Bert
+**Agent name:** Bert - Reward Modification
 
 **Author (s):** Samuel Taubman (staubman3@gatech.edu), Aishani Chakraborty (achakraborty75@gatech.edu), Dennis Anthony (danthony33@gatech.edu)
 
