@@ -20,7 +20,7 @@ from utils import create_rllib_env
 ALGORITHM = "PPO"
 CHECKPOINT_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "temp/checkpoint_000630/checkpoint-630",
+    "..\experiments\injected_ray_ma_players\hours13-24\checkpoint_001426\checkpoint-1426",
 )
 print(CHECKPOINT_PATH)
 POLICY_NAMES = [
