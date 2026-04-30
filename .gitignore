@@ -132,3 +132,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# slurm logs
+*.out
+
+*_agent_temp

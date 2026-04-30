@@ -5,7 +5,7 @@ from soccer_twos import EnvType
 from utils import create_rllib_env
 
 
-NUM_ENVS_PER_WORKER = 5
+NUM_ENVS_PER_WORKER = 3
 
 
 if __name__ == "__main__":
@@ -18,8 +18,8 @@ if __name__ == "__main__":
         name="DQN_1",
         config={
             # system settings
-            "num_gpus": 1,
-            "num_workers": 8,
+            "num_gpus": 0,
+            "num_workers": 6,
             "num_envs_per_worker": NUM_ENVS_PER_WORKER,
             "log_level": "INFO",
             "framework": "torch",
@@ -37,8 +37,8 @@ if __name__ == "__main__":
             },
         },
         stop={
-            "timesteps_total": 20000000,  # 20M
-            # "time_total_s": 14400, # 4h
+            # "timesteps_total": 20000000,  # 20M
+            "time_total_s": 3600, # 1h
         },
         checkpoint_freq=100,
         checkpoint_at_end=True,
