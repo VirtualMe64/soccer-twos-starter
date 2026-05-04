@@ -27,6 +27,8 @@ def create_rllib_env(env_config: dict = {}):
             env_config.worker_index * env_config.get("num_envs_per_worker", 1)
             + env_config.vector_index
         )
+
+    # env_config["worker_id"] = 51
     env = soccer_twos.make(**env_config)
     # env = TransitionRecorderWrapper(env)
     if "multiagent" in env_config and not env_config["multiagent"]:

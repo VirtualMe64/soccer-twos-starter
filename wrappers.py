@@ -8,8 +8,8 @@ from utils import RLLibWrapper
 
 class TeamBallWrapper(gym.core.Wrapper, MultiAgentEnv):
     def calculate_ball_position_reward(self, info):
-        MAX_REWARD = 0.0001
-        MIN_REWARD = -0.0001
+        MAX_REWARD = 0.005 #0.05
+        MIN_REWARD = -0.005 #-0.05
         MAX_DISTANCE = 30
         HALF_DISTANCE = MAX_DISTANCE / 2
 
@@ -29,10 +29,10 @@ class TeamBallWrapper(gym.core.Wrapper, MultiAgentEnv):
         return reward
     
     def calculate_ball_proximity_reward(self, info):
-        MAX_REWARD = 0.01
-        MIN_REWARD = 0
+        MAX_REWARD = 0.001 #0.05
+        MIN_REWARD = -0.001 #-0.05
         MAX_DISTANCE = 20
-
+        
         ball_loc = info[0][0]['ball_info']['position']
         reward = {}
         for team_id in [0, 1]:
@@ -44,27 +44,72 @@ class TeamBallWrapper(gym.core.Wrapper, MultiAgentEnv):
 
         return reward
 
+    def calculate_kick_direction_reward(self, info):
+        MAX_REWARD = 0.005 #0.05
+
+        reward = {}
+
+        ball_pos = info[0][0]['ball_info']['position']
+        ball_vel = info[0][0]['ball_info']['velocity']
+
+        for team_id in [0, 1]:
+            # goal positions
+            goal_x = 15 if team_id == 0 else -15
+            goal_vec = [goal_x - ball_pos[0], -ball_pos[1]]
+
+            # normalize
+            goal_norm = math.sqrt(goal_vec[0]**2 + goal_vec[1]**2) + 1e-8
+            vel_norm = math.sqrt(ball_vel[0]**2 + ball_vel[1]**2) + 1e-8
+
+            goal_dir = [goal_vec[0]/goal_norm, goal_vec[1]/goal_norm]
+            vel_dir = [ball_vel[0]/vel_norm, ball_vel[1]/vel_norm]
+
+            # dot product = alignment
+            alignment = goal_dir[0]*vel_dir[0] + goal_dir[1]*vel_dir[1]
+
+            reward[team_id] = MAX_REWARD * alignment  # [-MAX, MAX]
+
+        return reward
+
+    def calculate_kick_speed_reward(self, info):
+        MAX_REWARD = 0.001
+        MAX_SPEED = 20 #may need to change
+
+        ball_vel = info[0][0]['ball_info']['velocity']
+        speed = math.sqrt(ball_vel[0]**2 + ball_vel[1]**2)
+
+        scaled = min(speed / MAX_SPEED, 1.0)
+
+        return {
+            0: MAX_REWARD * scaled,
+            1: MAX_REWARD * scaled
+        }
 
     def step(self, action):
         observation, reward, done, info = super().step(action)
         
         ball_pos_rewards = self.calculate_ball_position_reward(info)
         ball_proximity_rewards = self.calculate_ball_proximity_reward(info)
+        direction_rewards = self.calculate_kick_direction_reward(info)
+        speed_rewards = self.calculate_kick_speed_reward(info)
+
         for team_id in reward:
             reward[team_id] += ball_pos_rewards[team_id]
             reward[team_id] += ball_proximity_rewards[team_id]
+            reward[team_id] += direction_rewards[team_id]
+            reward[team_id] += speed_rewards[team_id]
 
         return observation, reward, done, info
 
-class IndividualBallWrapper(gym.core.Wrapper):
-    def calculate_ball_position_reward(self, info):
+class IndividualBallWrapper(gym.core.Wrapper, MultiAgentEnv):
+    def calculate_ball_position_reward(self, info, goal_x):
         MAX_REWARD = 0.0001
         MIN_REWARD = -0.0001
         MAX_DISTANCE = 30
         Y_FACTOR = 0.2
 
         ball_loc = info['ball_info']['position']
-        dist = math.sqrt(((ball_loc[0] - 15) ** 2) + (Y_FACTOR * (ball_loc[1] ** 2)))
+        dist = math.sqrt(((ball_loc[0] - goal_x) ** 2) + (Y_FACTOR * (ball_loc[1] ** 2)))
         base_reward = MAX_REWARD - (dist / MAX_DISTANCE) * (MAX_REWARD - MIN_REWARD)
         reward = max(MIN_REWARD, min(MAX_REWARD, base_reward))
 
@@ -83,15 +128,17 @@ class IndividualBallWrapper(gym.core.Wrapper):
 
         return reward
 
-    def calculate_existence_reward(self):
+    def calculate_existence_reward(self, info):
         return -0.00005
 
     def step(self, action):
         observation, reward, done, info = super().step(action)
-        
-        reward += self.calculate_ball_position_reward(info)
-        reward += self.calculate_existence_reward()
-        reward += self.calculate_ball_proximity_reward(info)
+
+        for player_id in reward:
+            goal_x = 15 if int(player_id) <= 1 else -15
+            reward[player_id] += self.calculate_ball_position_reward(info[player_id], goal_x)
+            reward[player_id] += self.calculate_ball_proximity_reward(info[player_id])
+            reward[player_id] += self.calculate_existence_reward(info)
 
         return observation, reward, done, info
 
