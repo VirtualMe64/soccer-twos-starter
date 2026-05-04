@@ -32,6 +32,7 @@ class TeamAgent(AgentInterface):
         else:
             print("Checkpoint not found.")
         self.model.eval()
+        self.name = "TeamAgent"
 
     def act(self, observation):
         """The act method is called when the agent is asked to act.
